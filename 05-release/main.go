@@ -102,8 +102,12 @@ func createContact(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	saveContact(db, &contact)
-	c.JSON(http.StatusCreated, contact)
+	err := saveContact(db, &contact)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusCreated, contact)
+	}
 }
 
 // UpdateContact updates a a contact data.
@@ -123,10 +127,19 @@ func updateContactById(c *gin.Context) {
 	}
 	contactId, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		panic("failed parse the contactId")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
-	updatedContact := updateContact(db, uint(contactId), contact)
-	c.JSON(http.StatusOK, updatedContact)
+	updatedContact, err := updateContact(db, uint(contactId), contact)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, updatedContact)
+	}
 }
 
 // DeleteContact deletes a contact.
@@ -139,9 +152,18 @@ func updateContactById(c *gin.Context) {
 func deleteContactById(c *gin.Context) {
 	contactId, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		panic("failed parse the contactId")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
-	deleteContact(db, uint(contactId))
+	err = deleteContact(db, uint(contactId))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	c.JSON(http.StatusNoContent, "")
 }
 
@@ -156,10 +178,19 @@ func deleteContactById(c *gin.Context) {
 func getContactById(c *gin.Context) {
 	contactId, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		panic("failed parse the contactId")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
-	contact := readContactById(db, uint(contactId))
-	c.JSON(http.StatusOK, contact)
+	contact, err := readContactById(db, uint(contactId))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, contact)
+	}
 }
 
 // GetAllContacts Get all contacts.
@@ -170,23 +201,30 @@ func getContactById(c *gin.Context) {
 // @Success      200  {object}  []Contact
 // @Router       /contacts [get]
 func listContacts(c *gin.Context) {
-	allContacts := readAllContacts(db)
+	allContacts, err := readAllContacts(db)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	c.JSON(http.StatusOK, allContacts)
 }
 
 // DATABASE
-func deleteContact(db *gorm.DB, contactId uint) {
+func deleteContact(db *gorm.DB, contactId uint) error {
 	result := db.Delete(Contact{}, Contact{ID: contactId})
 	if result.RowsAffected != 1 {
-		panic(fmt.Sprintf("Cannot delete contact with id '%d'", contactId))
+		return fmt.Errorf("cannot delete contact with id '%d'", contactId)
 	}
+	return nil
 }
 
-func updateContact(db *gorm.DB, contactId uint, contact Contact) (c Contact) {
+func updateContact(db *gorm.DB, contactId uint, contact Contact) (c *Contact, err error) {
 
 	result := db.Model(Contact{}).First(&c, Contact{ID: contactId})
 	if result.RowsAffected != 1 {
-		panic(fmt.Sprintf("Cannot retrieve contact with id '%d'", contactId))
+		return nil, fmt.Errorf("cannot retrieve contact with id '%d'", contactId)
 	}
 
 	c.Address = contact.Address
@@ -198,31 +236,32 @@ func updateContact(db *gorm.DB, contactId uint, contact Contact) (c Contact) {
 
 	result = db.Save(&c)
 	if result.Error != nil {
-		panic(fmt.Sprintf("Cannot update contact with id '%d'", contactId))
+		return nil, fmt.Errorf("cannot update contact with id '%d'", contactId)
 	}
 	return
 }
 
-func readContactById(db *gorm.DB, contactId uint) (contact Contact) {
+func readContactById(db *gorm.DB, contactId uint) (contact *Contact, err error) {
 	result := db.Model(Contact{}).First(&contact, Contact{ID: contactId})
 	if result.RowsAffected != 1 {
-		panic(`No user found`)
+		return nil, fmt.Errorf(`no user found with id '%d'`, contactId)
 	}
 	return
 }
 
-func readAllContacts(db *gorm.DB) []Contact {
+func readAllContacts(db *gorm.DB) ([]Contact, error) {
 	var contacts []Contact
 	result := db.Find(&contacts)
 	if result.Error != nil {
-		panic("Cannot list contacts")
+		return nil, fmt.Errorf("cannot list contacts")
 	}
-	return contacts
+	return contacts, nil
 }
 
-func saveContact(db *gorm.DB, contact *Contact) {
+func saveContact(db *gorm.DB, contact *Contact) error {
 	result := db.Create(&contact)
 	if result.Error != nil {
-		panic("Cannot insert contact")
+		return fmt.Errorf(`error saving contact`)
 	}
+	return nil
 }
