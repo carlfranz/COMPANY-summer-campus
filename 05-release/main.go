@@ -37,13 +37,7 @@ type Contact struct {
 // @host  localhost:8080
 // @schemes http
 
-var db *gorm.DB
-
-// This is the main application entry point
-// it can be run with 'go run main.go'.
-// to build the application we need to run
-// the command 'go build'.
-func main() {
+func initDB() *gorm.DB {
 	// Database drivers use a connection string in order to
 	// create a pool of connections to a database. Hence we
 	// describe all the variables in a "Database Source name"
@@ -61,6 +55,16 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	return db
+}
+
+var db = initDB()
+
+// This is the main application entry point
+// it can be run with 'go run main.go'.
+// to build the application we need to run
+// the command 'go build'.
+func main() {
 
 	// This command creates and keeps update the database table related to the
 	// contact Entity.
@@ -172,16 +176,16 @@ func listContacts(c *gin.Context) {
 
 // DATABASE
 func deleteContact(db *gorm.DB, contactId uint) {
-	result := db.Delete(Contact{ID: contactId})
-	if result.Error != nil {
+	result := db.Delete(Contact{}, Contact{ID: contactId})
+	if result.RowsAffected != 1 {
 		panic(fmt.Sprintf("Cannot delete contact with id '%d'", contactId))
 	}
 }
 
 func updateContact(db *gorm.DB, contactId uint, contact Contact) (c Contact) {
 
-	result := db.Model(Contact{ID: contactId}).First(&c)
-	if result.Error != nil {
+	result := db.Model(Contact{}).First(&c, Contact{ID: contactId})
+	if result.RowsAffected != 1 {
 		panic(fmt.Sprintf("Cannot retrieve contact with id '%d'", contactId))
 	}
 
@@ -199,8 +203,11 @@ func updateContact(db *gorm.DB, contactId uint, contact Contact) (c Contact) {
 	return
 }
 
-func readContactById(db *gorm.DB, contactId uint) (result Contact) {
-	db.Model(Contact{ID: contactId}).First(&result)
+func readContactById(db *gorm.DB, contactId uint) (contact Contact) {
+	result := db.Model(Contact{}).First(&contact, Contact{ID: contactId})
+	if result.RowsAffected != 1 {
+		panic(`No user found`)
+	}
 	return
 }
 
