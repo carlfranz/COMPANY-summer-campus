@@ -73,9 +73,9 @@ func main() {
 	{
 		contacts.POST("/", createContact)
 		contacts.PUT(":id", updateContactById)
-		contacts.DELETE("/contacts/:id", deleteContactById)
-		contacts.GET("/contacts/:id", getContactById)
-		contacts.GET("/contacts", listContacts)
+		contacts.DELETE(":id", deleteContactById)
+		contacts.GET(":id", getContactById)
+		contacts.GET("/", listContacts)
 	}
 
 	r.Run()
