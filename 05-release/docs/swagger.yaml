@@ -1,0 +1,124 @@
+definitions:
+  main.Contact:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      notes:
+        type: string
+      phone:
+        type: string
+      website:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server celler server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /contacts:
+    get:
+      description: Returns all the contacts in the contact manager.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Contact'
+            type: array
+      summary: Get the Contacts.
+      tags:
+      - Contact
+    post:
+      consumes:
+      - application/json
+      description: Creates a new contact
+      parameters:
+      - description: All the informations required to create a contact
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/main.Contact'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.Contact'
+      summary: Create new idea.
+      tags:
+      - Contact
+  /contacts/{id}:
+    delete:
+      description: Allows the deletion of a contact.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: ""
+      summary: Request delete contact.
+      tags:
+      - Contact
+    get:
+      description: Gets detailed info about a contact.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Contact'
+      summary: Get contact details.
+      tags:
+      - Contact
+    put:
+      consumes:
+      - application/json
+      description: Update the contact informations
+      parameters:
+      - description: All the property of the contact
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/main.Contact'
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: ""
+      summary: Update contact.
+      tags:
+      - Contact
+schemes:
+- http
+swagger: "2.0"
